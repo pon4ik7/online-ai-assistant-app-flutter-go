@@ -1,0 +1,44 @@
+version: '3'
+
+services:
+  postgres:
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U radat -d radatDB" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    image: postgres:latest
+    container_name: postgres-container
+    environment:
+      POSTGRES_USER: radat
+      POSTGRES_PASSWORD: radatSWP25
+      POSTGRES_DB: radatDB
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+
+  app:
+    build: .
+    container_name: go-app-container
+    environment:
+      DATABASE_URL: "postgres://radat:radatSWP25@db:5432/radatDB?sslmode=disable"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations
+    networks:
+      - app-network
+
+volumes:
+  pgdata:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
